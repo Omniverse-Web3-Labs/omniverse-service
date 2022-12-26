@@ -1,0 +1,22 @@
+{
+  "name": "omniverse-faucet",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@polkadot/api": "^9.10.4",
+    "compression": "^1.7.4",
+    "cookie-parser": "^1.4.6",
+    "eccrypto": "^1.1.6",
+    "express": "^4.18.2",
+    "keccak256": "^1.0.6",
+    "moment": "^2.29.4",
+    "scale-ts": "^0.2.11",
+    "secp256k1": "^4.0.3"
+  }
+}
