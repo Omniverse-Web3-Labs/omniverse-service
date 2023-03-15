@@ -7,6 +7,7 @@ const eccrypto = require('eccrypto');
 const fs = require('fs')
 const { ApiPromise, HttpProvider, Keyring } = require('@polkadot/api');
 const httpProvider = new HttpProvider('http://127.0.0.1:9933');
+const utils = require('./utils');
 
 (async () => {
   var app = express();
@@ -26,16 +27,16 @@ const httpProvider = new HttpProvider('http://127.0.0.1:9933');
     res.setHeader('Access-Control-Allow-Origin', '*');
     next();
   });
-  require('./utils');
+  // require('./mpc');
 
   global.KeyMap = new Map();
   // Private key
   let secret = JSON.parse(fs.readFileSync('./.secret').toString());
   let ownerAccountPrivateKey = secret.sks[secret.index];
-  global.PrivateKeyBuffer = Buffer.from(ToByteArray(ownerAccountPrivateKey));
+  global.PrivateKeyBuffer = Buffer.from(utils.toByteArray(ownerAccountPrivateKey));
   let publicKeyBuffer = eccrypto.getPublic(PrivateKeyBuffer);
   global.PublicKey = '0x' + publicKeyBuffer.toString('hex').slice(2);
-  global.Api = await ApiPromise.create({ provider: httpProvider });
+  global.Api = await ApiPromise.create({ provider: httpProvider, noInitWarn: true });
   const keyring = new Keyring({ type: 'ecdsa' });
   global.Sender = keyring.addFromSeed(PrivateKeyBuffer);
   
