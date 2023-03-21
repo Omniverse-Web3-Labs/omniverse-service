@@ -2,7 +2,7 @@ const { u8, u128, Struct, Vector, Bytes } = require('scale-ts');
 const secp256k1 = require('secp256k1');
 const keccak256 = require('keccak256');
 const BN = require('bn.js');
-
+const { blake2AsHex, encodeAddress } = require('@polkadot/util-crypto');
 const Assets = Struct({
   op: u8,
   ex_data: Vector(u8),
@@ -15,7 +15,16 @@ const TransferTokenOp = Struct({
 });
 const ChainId = 1;
 
-async function sendTransaction(api, palletName, tokenId, privateKeyBuffer, publicKey, op, to, amount) {
+async function sendTransaction(
+  api,
+  palletName,
+  tokenId,
+  privateKeyBuffer,
+  publicKey,
+  op,
+  to,
+  amount
+) {
   let nonce = await api.query.omniverseProtocol.transactionCount(
     publicKey,
     palletName,
@@ -68,10 +77,7 @@ let getRawData = (txData) => {
   bData = Buffer.concat([bData, Buffer.from(asset.ex_data)]);
   bData = Buffer.concat([
     bData,
-    Buffer.from(
-      new BN(asset.amount).toString('hex').padStart(32, '0'),
-      'hex'
-    ),
+    Buffer.from(new BN(asset.amount).toString('hex').padStart(32, '0'), 'hex'),
   ]);
 
   return bData;
@@ -101,7 +107,31 @@ function toByteArray(hexString) {
   return result;
 }
 
+function getAddress(publicKey) {
+  // `publicKey` starts from `0x`
+  // const pubKey = publicKey.substring(2);
+  if (publicKey.substr(0, 2) == '0x') {
+    publicKey = publicKey.substr(2);
+  }
+
+  const y = '0x' + publicKey.substring(64);
+  // console.log(y);
+
+  const _1n = BigInt(1);
+  let flag = BigInt(y) & _1n ? '03' : '02';
+  // console.log(flag);
+
+  const x = Buffer.from(publicKey.substring(0, 64), 'hex');
+  // console.log(pubKey.substring(0, 64));
+  const finalX = Buffer.concat([Buffer.from([flag]), x]);
+  const finalXArray = new Uint8Array(finalX);
+  // console.log("Public Key: \n", finalXArray);
+  const addrHash = blake2AsHex(finalXArray);
+  return encodeAddress(addrHash);
+}
+
 module.exports = {
   sendTransaction,
   toByteArray,
+  getAddress,
 };
