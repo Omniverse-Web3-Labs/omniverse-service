@@ -45,11 +45,11 @@ module.exports = function (app) {
           var assetId = (await Api.query[pallet].tokenId2AssetId(tokenId)).toJSON();
           let metadata = (await Api.query[pallet].metadata(assetId)).toJSON();
           amount = AMOUNT + '0'.repeat(metadata.decimals);
-          var remain = await Api.query[pallet].tokens(tokenId, PublicKey);
-          if (BigInt(remain) < BigInt(amount)) {
-            res.send({ code: -3, message: 'Token not enough'});
-            return;
-          }
+          // var remain = await Api.query[pallet].tokens(tokenId, PublicKey);
+          // if (BigInt(remain) < BigInt(amount)) {
+          //   res.send({ code: -3, message: 'Token not enough'});
+          //   return;
+          // }
         } else {
           res.send({ code: -4, message: 'Missing tokenId' });
           return;
