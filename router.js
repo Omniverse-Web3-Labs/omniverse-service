@@ -90,8 +90,8 @@ module.exports = function (app) {
         console.log(
           'Faucet tokenId: ' + tokenId + ' to ' + account + ' successfully!!!'
         );
-        res.send({ code: 0, message: 'Successfully' });
         KeyMap.set(key, lastClaimTime);
+        res.send({ code: 0, message: 'Successfully' });
         return;
       } else {
         if (req.query.hasOwnProperty('itemId')) {
