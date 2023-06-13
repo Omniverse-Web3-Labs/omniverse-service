@@ -4,10 +4,10 @@ const compression = require('compression');
 const moment = require('moment');
 const cookieParser = require('cookie-parser');
 const eccrypto = require('eccrypto');
-const fs = require('fs')
+const fs = require('fs');
 const { ApiPromise, HttpProvider, Keyring } = require('@polkadot/api');
-const httpProvider = new HttpProvider('http://127.0.0.1:9933');
-const utils = require('./utils');
+const httpProvider = new HttpProvider('http://127.0.0.1:9911');
+const utils = require('../utils');
 
 (async () => {
   var app = express();
@@ -33,15 +33,20 @@ const utils = require('./utils');
   // Private key
   let secret = JSON.parse(fs.readFileSync('./.secret').toString());
   let ownerAccountPrivateKey = secret.sks[secret.index];
-  global.PrivateKeyBuffer = Buffer.from(utils.toByteArray(ownerAccountPrivateKey));
+  global.PrivateKeyBuffer = Buffer.from(
+    utils.toByteArray(ownerAccountPrivateKey)
+  );
   let publicKeyBuffer = eccrypto.getPublic(PrivateKeyBuffer);
   global.PublicKey = '0x' + publicKeyBuffer.toString('hex').slice(2);
-  global.Api = await ApiPromise.create({ provider: httpProvider, noInitWarn: true });
+  global.Api = await ApiPromise.create({
+    provider: httpProvider,
+    noInitWarn: true,
+  });
   const keyring = new Keyring({ type: 'ecdsa' });
   global.Sender = keyring.addFromSeed(PrivateKeyBuffer);
-  
+
   require('./router')(app);
-  var port = 7788;
+  var port = 7799;
   //监听端口
   app.listen(port);
 

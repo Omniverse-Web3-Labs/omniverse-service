@@ -1,4 +1,4 @@
-const utils = require('./utils');
+const utils = require('../utils');
 const AMOUNT = '10';
 const { Keyring } = require('@polkadot/keyring');
 

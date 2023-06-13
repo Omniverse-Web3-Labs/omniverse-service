@@ -3,53 +3,16 @@ const secp256k1 = require('secp256k1');
 const keccak256 = require('keccak256');
 const BN = require('bn.js');
 const { blake2AsHex, encodeAddress } = require('@polkadot/util-crypto');
-const Assets = Struct({
+const Fungible = Struct({
   op: u8,
   ex_data: Vector(u8),
   amount: u128,
 });
 
-const TransferTokenOp = Struct({
-  to: Bytes(64),
-  amount: u128,
-});
-const ChainId = 1;
-
-async function sendTransaction(
-  api,
-  palletName,
-  tokenId,
-  privateKeyBuffer,
-  publicKey,
-  op,
-  to,
-  amount
-) {
-  let nonce = await api.query.omniverseProtocol.transactionCount(
-    publicKey,
-    palletName,
-    tokenId
-  );
-
-  let payload = Assets.enc({
-    op: op,
-    ex_data: Array.from(Buffer.from(to.slice(2), 'hex')),
-    amount: BigInt(amount),
-  });
-
-  let txData = {
-    nonce: nonce.toJSON(),
-    chainId: ChainId,
-    initiatorAddress: tokenId,
-    from: publicKey,
-    payload: toHexString(Array.from(payload)),
-  };
-
-  let bData = getRawData(txData);
-  let hash = keccak256(bData);
-  txData.signature = signData(hash, privateKeyBuffer);
-  console.log(txData);
-  return txData;
+// query info from blockchain node
+async function contractCall(provider, moduleName, methodName, arguments) {
+  const ret = await provider.query[moduleName][methodName](...arguments);
+  return ret;
 }
 
 // Convert u8 array to hex string
@@ -71,13 +34,16 @@ let getRawData = (txData) => {
   ]);
   console.log(bData);
 
-  let asset = Assets.dec(txData.payload);
-  bData = Buffer.concat([bData, Buffer.from([asset.op])]);
+  let fungible = Fungible.dec(txData.payload);
+  bData = Buffer.concat([bData, Buffer.from([fungible.op])]);
 
-  bData = Buffer.concat([bData, Buffer.from(asset.ex_data)]);
+  bData = Buffer.concat([bData, Buffer.from(fungible.ex_data)]);
   bData = Buffer.concat([
     bData,
-    Buffer.from(new BN(asset.amount).toString('hex').padStart(32, '0'), 'hex'),
+    Buffer.from(
+      new BN(fungible.amount).toString('hex').padStart(32, '0'),
+      'hex'
+    ),
   ]);
 
   return bData;
@@ -130,8 +96,83 @@ function getAddress(publicKey) {
   return encodeAddress(addrHash);
 }
 
+// query info from blockchain node
+async function contractCall(provider, moduleName, methodName, arguments) {
+  const ret = await provider.query[moduleName][methodName](...arguments);
+  return ret;
+}
+
+function substrateTxWorker(
+  { api, moduleName, methodName, account, arguments },
+  callback
+) {
+  api.tx[moduleName][methodName](...arguments).signAndSend(
+    account,
+    ({ status, events }) => {
+      // console.log(status.isInBlock, status.isFinalized);
+      if (status.isInBlock || status.isFinalized) {
+        events
+          // find/filter for failed events
+          .filter(({ event }) => api.events.system.ExtrinsicFailed.is(event))
+          // we know that data for system.ExtrinsicFailed is
+          // (DispatchError, DispatchInfo)
+          .forEach(
+            ({
+              event: {
+                data: [error, info],
+              },
+            }) => {
+              if (error.isModule) {
+                // for module errors, we have the section indexed, lookup
+                const decoded = api.registry.findMetaError(error.asModule);
+                const { docs, method, section } = decoded;
+
+                console.log(`${section}.${method}: ${docs.join(' ')}`);
+              } else {
+                // Other, CannotLookup, BadOrigin, no extra info
+                console.log(error.toString());
+              }
+              callback(error);
+            }
+          );
+        if (status.isInBlock) {
+          callback();
+        }
+      }
+    }
+  );
+}
+
+async function enqueueTask(
+  queue,
+  api,
+  moduleName,
+  methodName,
+  account,
+  arguments
+) {
+  return new Promise((resolve, reject) => {
+    queue.push(
+      { api, moduleName, methodName, account, arguments },
+      function (error) {
+        if (error) {
+          reject(false);
+        } else {
+          resolve(true);
+        }
+      }
+    );
+  });
+}
+
 module.exports = {
-  sendTransaction,
+  contractCall,
+  substrateTxWorker,
+  enqueueTask,
   toByteArray,
   getAddress,
+  Fungible,
+  toHexString,
+  getRawData,
+  signData,
 };
