@@ -35,11 +35,14 @@ let pending = {};
             if (event.method == 'PendingDeposit') {
               let pk = event.data[0].toHuman();
               let tokenId = event.data[1].toHuman();
-              let nonce = event.data[2].toHuman();
+              let nonce = event.data[2].toJSON();
               pending[chainName].add(pk + tokenId + nonce);
               console.log('Depisit:', pk, tokenId, nonce);
             }
-            if (event.method == 'Withdrawals') {
+            if (event.method == 'Withdrawal') {
+              let pk = event.data[0].toHuman();
+              let tokenId = event.data[1].toHuman();
+              let amount = event.data[2].toJSON();
               let nonce = (
                 await utils.contractCall(
                   api,
@@ -48,7 +51,16 @@ let pending = {};
                   [publicKey, 'assets', tokenId]
                 )
               ).toJSON();
-              let txData = transferData(tokenId, pk, value.toJSON(), nonce);
+              console.log('withdrawal: ', tokenId, pk, amount);
+              let txData = transferData(
+                conf.omniverseChainId,
+                privateKeyBuffer,
+                publicKey,
+                tokenId,
+                pk,
+                amount,
+                nonce
+              );
               await utils.enqueueTask(
                 queues,
                 api,
@@ -62,10 +74,9 @@ let pending = {};
           if (event.section == 'assets') {
             if (event.method == 'TransactionExecuted') {
               let pk = event.data[0].toHuman();
-              let nonce = event.data[1].toHuman();
+              let nonce = event.data[1].toJSON();
               let tokenId = event.data[2].toHuman();
               let key = pk + tokenId + nonce;
-              console.log(key);
               if (pending[chainName].has(key)) {
                 await utils.enqueueTask(
                   queues,
@@ -93,7 +104,6 @@ let pending = {};
         await api.query.omniverseSwap.depositRecords.entries();
       for (let [key, _] of depositRecords) {
         let [[pk, tokenId, nonce]] = key.toHuman();
-        console.log(pk);
         let omniTx = (
           await utils.contractCall(
             api,

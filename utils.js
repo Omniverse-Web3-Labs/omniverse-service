@@ -32,7 +32,6 @@ let getRawData = (txData) => {
     Buffer.from(txData.initiatorAddress, 'utf-8'),
     Buffer.from(txData.from.slice(2), 'hex'),
   ]);
-  console.log(bData);
 
   let fungible = Fungible.dec(txData.payload);
   bData = Buffer.concat([bData, Buffer.from([fungible.op])]);
@@ -111,6 +110,7 @@ function substrateTxWorker(
     ({ status, events }) => {
       // console.log(status.isInBlock, status.isFinalized);
       if (status.isInBlock || status.isFinalized) {
+        let err;
         events
           // find/filter for failed events
           .filter(({ event }) => api.events.system.ExtrinsicFailed.is(event))
@@ -132,11 +132,11 @@ function substrateTxWorker(
                 // Other, CannotLookup, BadOrigin, no extra info
                 console.log(error.toString());
               }
-              callback(error);
+              err = error;
             }
           );
         if (status.isInBlock) {
-          callback();
+          callback(err);
         }
       }
     }
