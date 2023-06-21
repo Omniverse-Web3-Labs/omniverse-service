@@ -7,6 +7,7 @@ const keccak256 = require('keccak256');
 const config = require('./config/default.json');
 
 let pending = {};
+let disconnetCount = 0;
 (async () => {
   for (let chainName of Object.keys(config)) {
     pending[chainName] = new Set();
@@ -22,11 +23,19 @@ let pending = {};
 
     // Create our API with a default connection to the local node
     const wsProvider = new WsProvider(conf.nodeAddress);
+    wsProvider.on('disconnected', () => {
+      console.log(disconnetCount);
+      disconnetCount += 1;
+      if (disconnetCount >= 10) {
+        process.exit();
+      }
+    });
     let api = await ApiPromise.create({
       provider: wsProvider,
       noInitWarn: true,
     });
     api.query.system.events(async (events) => {
+      disconnetCount = 0;
       events.forEach(async (record) => {
         const { event } = record;
         try {
