@@ -4,10 +4,14 @@ const compression = require('compression');
 const moment = require('moment');
 const cookieParser = require('cookie-parser');
 const eccrypto = require('eccrypto');
-const fs = require('fs');
-const { ApiPromise, HttpProvider, Keyring } = require('@polkadot/api');
-const httpProvider = new HttpProvider('http://127.0.0.1:9911');
-const utils = require('../utils');
+const fs = require('fs')
+const { ApiPromise, HttpProvider, Keyring, WsProvider } = require('@polkadot/api');
+const config = require('config');
+global.StateDB = require('../utils/state');
+// const httpProvider = new HttpProvider('http://47.254.40.186:9933');
+const wsProvider = new WsProvider(config.get('nodeAddress'));
+const utils = require('../utils/utils');
+const { queue } = require('async');
 
 (async () => {
   var app = express();
@@ -27,28 +31,28 @@ const utils = require('../utils');
     res.setHeader('Access-Control-Allow-Origin', '*');
     next();
   });
-  // require('./mpc');
 
-  global.KeyMap = new Map();
+  StateDB.init(config.get('stateDB'));
+  
+  wsProvider.on('disconnected', () => {
+    StateDB.init(config.get('stateDB'));
+  });
+
   // Private key
-  let secret = JSON.parse(fs.readFileSync('./.secret').toString());
-  let ownerAccountPrivateKey = secret.sks[secret.index];
-  global.PrivateKeyBuffer = Buffer.from(
-    utils.toByteArray(ownerAccountPrivateKey)
-  );
+  let ownerAccountPrivateKey = JSON.parse(fs.readFileSync(config.get('secret')).toString());
+  // let ownerAccountPrivateKey = secret.sks[secret.index];
+  global.PrivateKeyBuffer = Buffer.from(utils.toByteArray(ownerAccountPrivateKey));
   let publicKeyBuffer = eccrypto.getPublic(PrivateKeyBuffer);
   global.PublicKey = '0x' + publicKeyBuffer.toString('hex').slice(2);
-  global.Api = await ApiPromise.create({
-    provider: httpProvider,
-    noInitWarn: true,
-  });
+  global.Api = await ApiPromise.create({ provider: wsProvider, noInitWarn: true });
   const keyring = new Keyring({ type: 'ecdsa' });
   global.Sender = keyring.addFromSeed(PrivateKeyBuffer);
+  global.Queue = queue(utils.substrateTxWorker, 1);
 
-  require('./router')(app);
-  var port = 7799;
+  await require('./router')(app);
+  var port = 7788;
   //监听端口
-  app.listen(port);
+  app.listen(port, '0.0.0.0');
 
   console.log(
     '%s | node server initializing | listening on port %s | process id %s',

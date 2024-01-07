@@ -3,11 +3,17 @@ const secp256k1 = require('secp256k1');
 const keccak256 = require('keccak256');
 const BN = require('bn.js');
 const { blake2AsHex, encodeAddress } = require('@polkadot/util-crypto');
-const Fungible = Struct({
+const Assets = Struct({
   op: u8,
   ex_data: Vector(u8),
   amount: u128,
 });
+const TransferTokenOp = Struct({
+  to: Bytes(64),
+  amount: u128,
+});
+
+const ChainId = 1;
 
 // query info from blockchain node
 async function contractCall(provider, moduleName, methodName, arguments) {
@@ -33,20 +39,18 @@ let getRawData = (txData) => {
     Buffer.from(txData.from.slice(2), 'hex'),
   ]);
 
-  let fungible = Fungible.dec(txData.payload);
-  bData = Buffer.concat([bData, Buffer.from([fungible.op])]);
+  let asset = Assets.dec(txData.payload);
+  bData = Buffer.concat([bData, Buffer.from([asset.op])]);
 
-  bData = Buffer.concat([bData, Buffer.from(fungible.ex_data)]);
+  bData = Buffer.concat([bData, Buffer.from(asset.ex_data)]);
   bData = Buffer.concat([
     bData,
-    Buffer.from(
-      new BN(fungible.amount).toString('hex').padStart(32, '0'),
-      'hex'
-    ),
+    Buffer.from(new BN(asset.amount).toString('hex').padStart(32, '0'), 'hex'),
   ]);
 
   return bData;
 };
+
 
 let signData = (hash, sk) => {
   let signature = secp256k1.ecdsaSign(
@@ -101,6 +105,43 @@ async function contractCall(provider, moduleName, methodName, arguments) {
   return ret;
 }
 
+async function sendTransaction(
+  api,
+  palletName,
+  tokenId,
+  privateKeyBuffer,
+  publicKey,
+  op,
+  to,
+  amount
+) {
+  let nonce = await api.query.omniverseProtocol.transactionCount(
+    publicKey,
+    palletName,
+    tokenId
+  );
+
+  let payload = Assets.enc({
+    op: op,
+    ex_data: Array.from(Buffer.from(to.slice(2), 'hex')),
+    amount: BigInt(amount),
+  });
+
+  let txData = {
+    nonce: nonce.toJSON(),
+    chainId: ChainId,
+    initiatorAddress: tokenId,
+    from: publicKey,
+    payload: toHexString(Array.from(payload)),
+  };
+
+  let bData = getRawData(txData);
+  let hash = keccak256(bData);
+  txData.signature = signData(hash, privateKeyBuffer);
+  console.log(txData);
+  return txData;
+}
+
 function substrateTxWorker(
   { api, moduleName, methodName, account, arguments },
   callback
@@ -108,7 +149,7 @@ function substrateTxWorker(
   api.tx[moduleName][methodName](...arguments).signAndSend(
     account,
     ({ status, events }) => {
-      // console.log(status.isInBlock, status.isFinalized);
+      console.log(status.isInBlock, status.isFinalized);
       if (status.isInBlock || status.isFinalized) {
         let err;
         events
@@ -167,12 +208,14 @@ async function enqueueTask(
 
 module.exports = {
   contractCall,
+  sendTransaction,
   substrateTxWorker,
   enqueueTask,
   toByteArray,
   getAddress,
-  Fungible,
+  Assets,
   toHexString,
   getRawData,
   signData,
+  TransferTokenOp,
 };

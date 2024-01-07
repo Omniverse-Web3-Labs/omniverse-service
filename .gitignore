@@ -2,3 +2,5 @@ node_modules
 .secret
 package-lock.json
 test.js
+faucet/.state
+faucet/config/default.json

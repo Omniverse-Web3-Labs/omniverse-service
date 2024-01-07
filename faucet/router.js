@@ -1,11 +1,9 @@
-const utils = require('../utils');
+const utils = require('../utils/utils.js');
 const AMOUNT = '10';
 const { Keyring } = require('@polkadot/keyring');
 
-const TRANSFER = 0;
 const MINT = 1;
-const BURN = 2;
-module.exports = function (app) {
+module.exports = async function (app) {
   app.post('/get_token', async function (req, res) {
     var account = req.query.publicKey;
     var tokenId = req.query.tokenId;
@@ -22,12 +20,13 @@ module.exports = function (app) {
     let claimed = false;
     let lastClaimTime = currentTime;
     let oneDay = 24 * 60 * 60 * 1000;
-    if (KeyMap.has(key)) {
-      lastClaimTime = KeyMap.get(key);
+    if (global.StateDB.has(key)) {
+      lastClaimTime = StateDB.getValue(key);
       if (currentTime - lastClaimTime < oneDay) {
         claimed = true;
       }
     }
+    let address = utils.getAddress(account);
     if (claimed) {
       let nextClaimTime = lastClaimTime + oneDay;
       res.send({
@@ -39,7 +38,6 @@ module.exports = function (app) {
       });
       return;
     } else {
-      let address = utils.getAddress(account);
       let {
         data: { free: balance },
       } = await Api.query.system.account(address);
@@ -47,7 +45,6 @@ module.exports = function (app) {
       let max = BigInt('1000000000000000');
       if (BigInt(balance) < minimun) {
         const keyring = new Keyring({ type: 'sr25519' });
-
         const alice = keyring.addFromUri('//Alice');
         await Api.tx.balances
           .transfer(address, max - BigInt(balance))
@@ -86,13 +83,25 @@ module.exports = function (app) {
           account,
           amount
         );
-        await Api.tx[pallet].sendTransaction(tokenId, tx).signAndSend(Sender);
-        console.log(
-          'Faucet tokenId: ' + tokenId + ' to ' + account + ' successfully!!!'
+        let result = await utils.enqueueTask(
+          Queue,
+          Api,
+          pallet,
+          'sendTransaction',
+          Sender,
+          [tokenId, tx]
         );
-        KeyMap.set(key, lastClaimTime);
-        res.send({ code: 0, message: 'Successfully' });
-        return;
+        if (result) {
+          await Api.tx[pallet].sendTransaction(tokenId, tx).signAndSend(Sender);
+          console.log(
+            'Faucet tokenId: ' + tokenId + ' to ' + account + ' successfully!!!\nSustrate:' + address
+          );
+          StateDB.setValue(key, lastClaimTime);
+          res.send({ code: 0, message: 'Successfully' });
+          return;
+        } else {
+          res.send({ code: -5, message: 'Please try again later!' });
+        }
       } else {
         if (req.query.hasOwnProperty('itemId')) {
           let itemId = req.query.itemId;
@@ -121,7 +130,7 @@ module.exports = function (app) {
             'Faucet tokenId: ' + tokenId + ' to ' + account + ' successfully!!!'
           );
           res.send({ code: 0, message: 'Successfully' });
-          KeyMap.set(key, lastClaimTime);
+          StateDB.set(key, lastClaimTime);
           return;
         } else {
           res.send({ code: -5, message: 'Missing itemId' });
