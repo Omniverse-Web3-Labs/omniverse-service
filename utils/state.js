@@ -16,16 +16,35 @@ class stateDB {
     }
   }
 
-  getValue(key, value = null) {
-    return this.state[key] ? this.state[key] : value;
+  getValue(table, key) {
+    if (!this.state[table]) {
+      return null;
+    } else {
+      return this.state[table][key] ? this.state[table][key] : null;
+    }
   }
 
-  has(key) {
-    return this.state[key] != undefined;
+  getTable(table) {
+    return this.state[table];
   }
 
-  setValue(key, value) {
-    this.state[key] = value;
+  has(table, key) {
+    if (!this.state[table]) {
+      return false;
+    }
+    return this.state[table][key] != undefined;
+  }
+
+  setValue(table, key, value) {
+    if (!this.state[table]) {
+      this.state[table] = {};
+    }
+    this.state[table][key] = value;
+    fs.writeFileSync(this.path, JSON.stringify(this.state, null, '\t'));
+  }
+
+  deleteValue(table, key) {
+    delete this.state[table][key];
     fs.writeFileSync(this.path, JSON.stringify(this.state, null, '\t'));
   }
 }

@@ -1,5 +1,5 @@
 {
-  "nodeAddress": "ws://127.0.0.1:9944",
+  "omniverseServer": "http://127.0.0.1:6358",
   "secret": "config/.secret",
   "stateDB": ".state"
 }
