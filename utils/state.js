@@ -25,6 +25,7 @@ class stateDB {
   }
 
   getTable(table) {
+    // return this.state[table]? this.state[table]: {};
     return this.state[table];
   }
 
