@@ -3,7 +3,7 @@ const PENDING_TABLE_NAME = 'Pending';
 const CLAIMED_TABLE_NAME = 'Claimed';
 
 module.exports = async function (app) {
-  app.post('/get_token', async function (req, res) {
+  app.get('/get_token', async function (req, res) {
     var address = req.query.address;
     if (address.substring(0, 2) !== '0x') {
       address = '0x' + address;
