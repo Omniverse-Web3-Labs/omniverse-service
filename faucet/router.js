@@ -52,7 +52,7 @@ module.exports = async function (app) {
         ' successfully!!!'
     );
     res.send({ code: 0, message: 'Receive a faucet request successfully' });
-    StateDB.setValue(PENDING_TABLE_NAME, address, lastClaimTime);
+    StateDB.setValue(PENDING_TABLE_NAME, address, currentTime);
     return;
   });
 };
