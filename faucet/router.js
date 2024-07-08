@@ -20,26 +20,30 @@ module.exports = async function (app) {
     if (StateDB.has(PENDING_TABLE_NAME, address)) {
       lastClaimTime = StateDB.getValue(PENDING_TABLE_NAME, address);
       let nextClaimTime = lastClaimTime + ONE_DAY;
-      res.send({
-        code: -2,
-        message:
-          'Already claimed, after ' +
-          new Date(nextClaimTime).toISOString() +
-          ' to claim.',
-      });
-      return;
+      if (nextClaimTime >= currentTime) {
+        res.send({
+          code: -2,
+          message:
+            'Already claimed, after ' +
+            new Date(nextClaimTime).toISOString() +
+            ' to claim.',
+        });
+        return;
+      }
     }
     if (StateDB.has(CLAIMED_TABLE_NAME, address)) {
       lastClaimTime = StateDB.getValue(CLAIMED_TABLE_NAME, address);
       let nextClaimTime = lastClaimTime + ONE_DAY;
-      res.send({
-        code: -1,
-        message:
-          'Already claimed, after ' +
-          new Date(nextClaimTime).toISOString() +
-          ' to claim.',
-      });
-      return;
+      if (nextClaimTime >= currentTime) {
+        res.send({
+          code: -2,
+          message:
+            'Already claimed, after ' +
+            new Date(nextClaimTime).toISOString() +
+            ' to claim.',
+        });
+        return;
+      }
     }
 
     console.log(

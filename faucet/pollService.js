@@ -1,12 +1,12 @@
 const utils = require('../utils/utils');
 const { eip712Hash } = require('./eip712');
+const config = require('config');
 const PENDING_TABLE_NAME = 'Pending';
 const CLAIMED_TABLE_NAME = 'Claimed';
-const ASSET_ID =
-  '0x0000000000000000000000000000000000000000000000000000000000000000';
-const FAUCET_AMOUNT = '10000000000000';
 
 const polling = async (request, sender, secret) => {
+  const assetId = config.get('assetId')
+  const faucetAmount = config.get('faucetAmount')
   while (1) {
     let table = StateDB.getTable(PENDING_TABLE_NAME);
     if (Object.keys(table).length !== 0) {
@@ -22,20 +22,21 @@ const polling = async (request, sender, secret) => {
       for (let address of addresses) {
         outputs.push({
           address,
-          amount: FAUCET_AMOUNT,
+          amount: faucetAmount,
         });
       }
       if (addresses) {
         try {
           let preTransferData = await request.rpc('preTransfer', [
             {
-              assetId: ASSET_ID,
+              assetId,
               address: sender,
               outputs,
             },
           ]);
+          console.log(preTransferData)
           let messageHash = eip712Hash(eip712Domain, {
-            asset_id: ASSET_ID,
+            asset_id: assetId,
             ...utils.snakeCaseKeys(preTransferData),
           });
 
@@ -46,7 +47,7 @@ const polling = async (request, sender, secret) => {
               {
                 type: 'Transfer',
                 signature,
-                assetId: ASSET_ID,
+                assetId,
                 ...preTransferData,
               },
             ]);
