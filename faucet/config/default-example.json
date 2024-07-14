@@ -3,5 +3,11 @@
   "secret": "config/.secret",
   "stateDB": ".state",
   "assetId": "0x0000000000000000000000000000000000000000000000000000000000000000",
-  "faucetAmount": "10000000000000"
+  "faucetAmount": "10000000000000",
+  "localToken": {
+    "faucetAmount": "100000000000000000",
+    "rpc": "http://127.0.0.1:8998",
+    "chainId": "1337",
+    "secret": "config/.localSecret"
+  }
 }
