@@ -84,7 +84,6 @@ async function sendLocalToken() {
   const sk = fs.readFileSync(config.get('localToken.secret')).toString();
   const chainId = config.get('localToken.chainId');
   let table = StateDB.getTable(LOCAL_PENDING_TABLE_NAME);
-  console.log('table',table,Object.keys(table));
   for (let address of Object.keys(table)) {
     const web3 = new Web3(rpc);
     // try {
