@@ -27,6 +27,9 @@ async function sendOmniverseAsset(request, sender, secret) {
         address,
         amount: faucetAmount,
       });
+      if (outputs.length > 15) {
+        break;
+      }
     }
     if (addresses) {
       try {
