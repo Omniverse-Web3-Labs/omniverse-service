@@ -57,10 +57,10 @@ async function sendOmniverseAsset(request, sender, secret) {
               ...preTransferData,
             },
           ]);
-          for (let address of outputs) {
-            let value = StateDB.getValue(PENDING_TABLE_NAME, address);
-            StateDB.setValue(CLAIMED_TABLE_NAME, address, value);
-            StateDB.deleteValue(PENDING_TABLE_NAME, address);
+          for (let output of outputs) {
+            let value = StateDB.getValue(PENDING_TABLE_NAME, output.address);
+            StateDB.setValue(CLAIMED_TABLE_NAME, output.address, value);
+            StateDB.deleteValue(PENDING_TABLE_NAME, output.address);
           }
         } catch (e) {
           console.error('sendTransaction failed:', e);
