@@ -23,13 +23,13 @@ async function sendOmniverseAsset(request, sender, secret) {
     let outputs = [];
     const addresses = Object.keys(table);
     for (let address of addresses) {
+      if (outputs.length > 10) {
+        break;
+      }
       outputs.push({
         address,
         amount: faucetAmount,
       });
-      if (outputs.length > 15) {
-        break;
-      }
     }
     if (addresses) {
       try {
