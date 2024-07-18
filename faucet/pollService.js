@@ -31,7 +31,7 @@ async function sendOmniverseAsset(request, sender, secret) {
         amount: faucetAmount,
       });
     }
-    if (addresses) {
+    if (outputs.length > 0) {
       try {
         let preTransferData = await request.rpc('preTransfer', [
           {
@@ -57,7 +57,7 @@ async function sendOmniverseAsset(request, sender, secret) {
               ...preTransferData,
             },
           ]);
-          for (let address of addresses) {
+          for (let address of outputs) {
             let value = StateDB.getValue(PENDING_TABLE_NAME, address);
             StateDB.setValue(CLAIMED_TABLE_NAME, address, value);
             StateDB.deleteValue(PENDING_TABLE_NAME, address);
