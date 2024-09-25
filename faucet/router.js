@@ -3,7 +3,7 @@ const PENDING_TABLE_NAME = 'Pending';
 const CLAIMED_TABLE_NAME = 'Claimed';
 const LOCAL_PENDING_TABLE_NAME = 'LocalPending';
 const LOCAL_CLAIMED_TABLE_NAME = 'LocalClaimed';
-const {isAddress} = require('web3-validator');
+const { isAddress } = require('web3-validator');
 
 module.exports = async function (app) {
   app.get('/get_token', async function (req, res) {
@@ -11,7 +11,7 @@ module.exports = async function (app) {
     if (address.substring(0, 2) !== '0x') {
       address = '0x' + address;
     }
-    if (address.length !== 66) {
+    if (!isValidOmniverseAddress(address)) {
       res.send({
         code: -1,
         message: 'Wrong address',
@@ -66,7 +66,7 @@ module.exports = async function (app) {
     }
     const isValidAddress = isAddress(address, false);
     if (!isValidAddress) {
-      console.error("Invalid address format:", address);
+      console.error('Invalid address format:', address);
       res.send({
         code: -1,
         message: 'Wrong address',
@@ -114,3 +114,9 @@ module.exports = async function (app) {
     return;
   });
 };
+
+function isValidOmniverseAddress(address) {
+  const regex = /^0x[0-9a-fA-F]{64}$/;
+
+  return regex.test(address);
+}
