@@ -30,10 +30,8 @@ const Request = require('./request');
 
   StateDB.init(config.get('stateDB'));
   // Private key
-  let ownerAccountPrivateKey = JSON.parse(
-    fs.readFileSync(config.get('secret')).toString()
-  );
-  const secret = Buffer.from(utils.toByteArray(ownerAccountPrivateKey));
+  let ownerAccountPrivateKey = fs.readFileSync(config.get('secret')).toString();
+  const secret = Buffer.from(ownerAccountPrivateKey, 'hex');
   const publicKeyBuffer = eccrypto.getPublic(secret);
 
   await require('./router')(app);
