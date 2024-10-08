@@ -119,34 +119,32 @@ async function sendLocalToken() {
         }
       }
       
-      if (addresses.length == 0) {
-        break;
-      }
-
-      // batch transfer
-      const ret = await ethereum.sendTransaction(web3, chainId, contract, 'batchTransfer', sk, [addresses]);
-
-      // confirm
-      if (!ret) {
-        console.log('Batch transfer failed');
-        return;
-      }
-
-      while (1) {
-        await utils.sleep(2);
-        const receipt = await waitForTransactionReceipt(
-          ret.transactionHash,
-          web3
-        );
-
-        if (receipt) {
-          for (let {account} of addresses) {
-            let value = StateDB.getValue(LOCAL_PENDING_TABLE_NAME, account);
-            StateDB.setValue(LOCAL_CLAIMED_TABLE_NAME, account, value);
-            StateDB.deleteValue(LOCAL_PENDING_TABLE_NAME, account);
+      if (addresses.length != 0) {
+        // batch transfer
+        const ret = await ethereum.sendTransaction(web3, chainId, contract, 'batchTransfer', sk, [addresses]);
+  
+        // confirm
+        if (!ret) {
+          console.log('Batch transfer failed');
+          return;
+        }
+  
+        while (1) {
+          await utils.sleep(2);
+          const receipt = await waitForTransactionReceipt(
+            ret.transactionHash,
+            web3
+          );
+  
+          if (receipt) {
+            for (let {account} of addresses) {
+              let value = StateDB.getValue(LOCAL_PENDING_TABLE_NAME, account);
+              StateDB.setValue(LOCAL_CLAIMED_TABLE_NAME, account, value);
+              StateDB.deleteValue(LOCAL_PENDING_TABLE_NAME, account);
+            }
+            console.log("Batch transfer ETH successfully");
+            break;
           }
-          console.log("Batch transfer ETH successfully");
-          break;
         }
       }
     } catch (err) {
