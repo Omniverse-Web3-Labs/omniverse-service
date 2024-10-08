@@ -5,9 +5,12 @@
   "assetId": "0x0000000000000000000000000000000000000000000000000000000000000000",
   "faucetAmount": "10000000000000",
   "localToken": {
-    "faucetAmount": "100000000000000000",
-    "rpc": "http://127.0.0.1:8998",
-    "chainId": "1337",
-    "secret": "config/.localSecret"
-  }
+		"faucetAmount": "100000000000000000",
+		"rpc": "http://127.0.0.1:8889",
+		"chainId": "1337",
+		"secret": "config/.localSecret",
+		"abi": "res/ETHFaucet.json",
+		"contract": "0x2495094F3064987844ef12339D03845be0836031",
+		"limit": 100
+	}
 }
