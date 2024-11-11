@@ -41,6 +41,7 @@ async function sendOmniverseAsset(request, sender, secret) {
               outputs,
             },
           ]);
+          preTransferData.gasPrice = networkParameters.fee.amount;
           console.log(preTransferData);
           let messageHash = eip712Hash(eip712Domain, {
             asset_id: assetId,

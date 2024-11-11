@@ -12,6 +12,7 @@ const TransferEip712TypeInfo = {
       { name: 'outputs', type: 'Output[]' },
       { name: 'fee_inputs', type: 'Input[]' },
       { name: 'fee_outputs', type: 'Output[]' },
+      { name: 'gas_price', type: 'uint128' },
     ],
     Input: [
       { name: 'txid', type: 'bytes32' },
